@@ -36,9 +36,6 @@ getQuery <- function(url) {
 #    - Specify limit (top 1-10)
 #    - Specify season
 
-team_stats <- getQuery("https://api-web.nhle.com/v1/club-stats/TOR/20242025/2")
-skaters <- getQuery("https://api-web.nhle.com/v1/skater-stats-leaders/current?categories=goals&limit=5")
-
 #Master function to build query URLs
 urlBuilder <- function(endpoint = "team", args) {
   #Sanity check: make sure arguments are in correct data structure
@@ -122,6 +119,49 @@ teamStatsClean <- function(data, pos) {
 #Leader stats builder.
 # Required arguments (and order):
 # 1) position (either skater or goalie)
-# 2) game type (either reg. season/2 or playoffs/3)
+# 2) stat type (for skaters: goals, assists, etc. goalies: sv%, gaa, wins, etc.)
 # 3) limit (how many people to display)
 # 4) season to display (defaults to 20242025)
+leaderStatsBuilder <- function(base, args) {
+  #Sanity check, make sure all args are in the list
+  if (length(args) != 4) {
+    stop("Incorrect arguments, there need to be 4: position, game type, display limit, and season.")
+  }
+  
+  #Set up base URL
+  base_endpoint <- paste(base, "club-stats", sep = "/")
+    
+  
+  #Apply arguments
+  pos <- args[1]
+  type <- args[2]
+  limit <- args[3]
+  season <- args[4]
+  
+  base_endpoint <- base
+  
+  if (pos == "skaters") {
+    base_endpoint <- paste(base, "skater-stats-leaders", sep = "/")
+  } else if (pos == "goalies") {
+    base_endpoint <- paste(base, "goalie-stats-leaders", sep = "/")
+  }
+  
+  url_1 <- paste(base_endpoint, season, "2", sep = "/")
+  url_2 <- paste(url_1, "?categories=", type, "&limit=", limit, sep = "")
+  
+  return(url_2)
+    
+}
+
+#Leader stats cleanup function
+leaderStatsClean <- function(data) {
+  result <- data[[1]]
+  
+  result$firstName <- result$firstName$default
+  result$lastName <- result$lastName$default
+  result$teamName <- result$teamName$default
+  
+  return(result)
+}
+
+skaters <- leaderStatsClean(getQuery(urlBuilder("goalies", list("goalies", "shutouts", "16", "20232024"))))
