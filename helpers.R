@@ -88,7 +88,36 @@ teamStatsBuilder <- function(base, args) {
 }
 
 #Team stats data clean/manipulate
-
+teamStatsClean <- function(data, pos) {
+  #Two different paths to take, one with skaters one with goalies
+  if (pos == "goalies") {
+    result <- data$goalies
+    
+    result <- result |>
+      select(playerId, firstName, lastName, gamesPlayed, gamesStarted, 
+             wins, losses, overtimeLosses, goalsAgainstAverage, 
+             savePercentage, shotsAgainst, saves, goalsAgainst, shutouts)
+    
+    result$firstName <- result$firstName$default
+    result$lastName <- result$lastName$default
+    
+    return(result)
+  } else if (pos == "skaters") {
+    result <- data$skaters
+    
+    result <- result |>
+      select(playerId, firstName, lastName, positionCode, gamesPlayed, goals, 
+             assists, points, penaltyMinutes, shots, 
+             shootingPctg, avgTimeOnIcePerGame, avgShiftsPerGame, faceoffWinPctg)
+    
+    result$firstName <- result$firstName$default
+    result$lastName <- result$lastName$default
+    
+    return(result)
+  } else {
+    stop("Please specify the proper position. Valid arguments: skaters, goalies.")
+  }
+}
 
 #Leader stats builder.
 # Required arguments (and order):
