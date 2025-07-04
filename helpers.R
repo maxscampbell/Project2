@@ -7,6 +7,29 @@ library(tidyverse)
 
 #---------- HELPER FUNCTIONS ---------- 
 
+#Master function to accept input from Shiny app
+fetchInput <- function(endpoint = "team", args) {
+  if (length(args) != 4) {
+    stop("Missing some inputs! Expected 4 arguments.")
+  }
+  
+  if (class(args) != "list") {
+    stop("Non-endpoint arguments are not stored in a list!")
+  }
+  
+  result <- urlBuilder(endpoint, args)
+  
+  if (endpoint == "team") {
+    result <- teamStatsClean(result)
+  } else if (endpoint == "skaters" || endpoint == "goalies") {
+    result <- leaderStatsClean(result)
+  } else {
+    stop("Could not resolve data.")
+  }
+  
+  return(result)
+}
+
 #Base function to get queries
 getQuery <- function(url) {
   returned_raw <- httr::GET(url)
@@ -37,7 +60,7 @@ getQuery <- function(url) {
 #    - Specify season
 
 #Master function to build query URLs
-urlBuilder <- function(endpoint = "team", args) {
+urlBuilder <- function(endpoint, args) {
   #Sanity check: make sure arguments are in correct data structure
   if (class(args) != "list") {
     stop("Arguments are not in a list!")
@@ -51,8 +74,6 @@ urlBuilder <- function(endpoint = "team", args) {
     return(teamStatsBuilder(base, args))
   } else if (endpoint == "skaters" || endpoint == "goalies") {
     return(leaderStatsBuilder(base, args))
-  } else {
-    # return a string to the UI
   }
   
 }
@@ -164,4 +185,4 @@ leaderStatsClean <- function(data) {
   return(result)
 }
 
-skaters <- leaderStatsClean(getQuery(urlBuilder("goalies", list("goalies", "shutouts", "16", "20232024"))))
+
