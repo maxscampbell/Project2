@@ -13,6 +13,7 @@ team_abbr <- c("ANA", "BOS", "BUF", "CAR", "CBJ", "CGY", "CHI", "COL",
 #---------- HELPER FUNCTIONS ---------- 
 
 #Master function to accept input from Shiny app
+# Returns a cleaned up request from the API
 fetchInput <- function(endpoint = "team", args) {
   if (length(args) != 4) {
     stop("Missing some inputs! Expected 4 arguments.")
@@ -22,17 +23,17 @@ fetchInput <- function(endpoint = "team", args) {
     stop("Non-endpoint arguments are not stored in a list!")
   }
   
-  result <- urlBuilder(endpoint, args)
+  result <- getQuery(urlBuilder(endpoint, args))
   
   if (endpoint == "team") {
-    result <- teamStatsClean(result)
+    result <- teamStatsClean(result, pos = args[1])
   } else if (endpoint == "skaters" || endpoint == "goalies") {
     result <- leaderStatsClean(result)
   } else {
     stop("Could not resolve data.")
   }
   
-  return(result)
+  return(as_tibble(result))
 }
 
 #Base function to get queries
@@ -100,7 +101,11 @@ teamStatsBuilder <- function(base, args) {
   
   #Apply arguments
   pos <- args[1]
-  type <- args[2]
+  if (args[2] == TRUE) { 
+    type <- "3" 
+  } else { 
+    type <- "2" 
+  }
   team <- args[3]
   season <- args[4]
 

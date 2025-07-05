@@ -37,7 +37,34 @@ ui <- fluidPage(
                 img(src = "nhl.png", align = "center")
                 ),
       nav_panel("Data Download",
-                #Content goes here
+                sidebarPanel(
+                  selectInput("endpoint", "Choose Dataset", choices = c("Team Statistics", "Leader Statistics")),
+                  textInput("season", "Enter a season", value = "20242025"),
+                  div("Enter a season as the two years that the season took place in with no extra characters. For example, the 2024-2025 NHL Season is '20242025'."),
+                  selectInput("position", "Choose a position", choices = c("Skaters", "Goalies")),
+                  conditionalPanel(
+                    condition = "input.endpoint == 'Team Statistics'",
+                    selectInput("team", "Choose a team", choices = team_abbr),
+                    checkboxInput("playoffs", "View Playoff Statistics", FALSE),
+                    div("NOTE: Program will return an error if you try to view playoffs statistics for a team that did not make the playoffs in that season.")
+                  ),
+                  conditionalPanel(
+                    condition = "input.endpoint == 'Leader Statistics'",
+                    sliderInput("limit", "Set entry count", min = 1, max = 25, value = 5),
+                    conditionalPanel(
+                      condition = "input.position == 'Skaters'",
+                      selectInput("stat_skater", "Choose a Statistic", choices = c("Goals", "Assists", "Points"))
+                    ),
+                    conditionalPanel(
+                      condition = "input.position == 'Goalies'",
+                      selectInput("stat_goalie", "Choose a Statistic", choices = c("Wins", "Shutouts"))
+                    )
+                  ),
+                  downloadButton("save", "Save Data")
+                ),
+                mainPanel(
+                  card(tableOutput("data"))
+                )
                 ),
       nav_panel("Data Exploration",
                 #Content goes here
@@ -47,17 +74,64 @@ ui <- fluidPage(
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
-
-    output$distPlot <- renderPlot({
-        # generate bins based on input$bins from ui.R
-        x    <- faithful[, 2]
-        bins <- seq(min(x), max(x), length.out = input$bins + 1)
-
-        # draw the histogram with the specified number of bins
-        hist(x, breaks = bins, col = 'darkgray', border = 'white',
-             xlab = 'Waiting time to next eruption (in mins)',
-             main = 'Histogram of waiting times')
+  
+    table <- reactive ({
+      if(input$endpoint == "Team Statistics") {
+        end <- "team"
+        
+        arguments <- list(
+          tolower(input$position),
+          input$playoffs,
+          input$team,
+          input$season
+        )
+        
+      } else if (input$endpoint == "Leader Statistics" && input$position == "Skaters") {
+        end <- "skaters"
+        
+        stat <- switch(input$stat_skater,
+                       "Goals" = "goals",
+                       "Assists" = "assists",
+                       "Points" = "points",
+        )
+        
+        arguments <- list(
+          tolower(input$position),
+          stat,
+          input$limit,
+          input$season
+        )
+        
+      } else if (input$endpoint == "Leader Statistics" && input$position == "Goalies") {
+        end <- "goalies" 
+        
+        stat <- switch(input$stat_goalie,
+                       "Wins" = "wins",
+                       "Shutouts" = "shutouts"
+        )
+        
+        
+        arguments <- list(
+          tolower(input$position),
+          stat,
+          input$limit,
+          input$season
+        )
+      }
+      
+      fetchInput(endpoint = end, arguments)
     })
+
+    output$data <- renderTable({
+      table()
+    })
+    
+    output$save <- downloadHandler(
+      filename = "NHL_Data.csv",
+      content = function(file) {
+        write.csv(table(), file, row.names = FALSE)
+      }
+    )
 }
 
 # Run the application 
