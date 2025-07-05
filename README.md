@@ -1,6 +1,6 @@
 # About This Project
 
-This is an R Shiny app designed to view data pertaining to the National Hockey League (NHL) and interact with it in meaningful ways! All data is sourced from the [NHL API](https://gitlab.com/dword4/nhlapi). Special thanks to dword4 and Zmalski for their helpful reference documentation!
+This is an R Shiny app designed to view data pertaining to the National Hockey League (NHL) and explore some high-level data pertaining to team-wide statistics as well as viewing the leaders in several key statistics! All data is sourced from the [NHL API](https://gitlab.com/dword4/nhlapi). Special thanks to dword4 and Zmalski for their helpful reference documentation!
 
 ## Required Packages
 
