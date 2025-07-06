@@ -118,6 +118,7 @@ teamStatsBuilder <- function(base, args) {
 #Team stats data clean/manipulate
 teamStatsClean <- function(data, pos) {
   #Two different paths to take, one with skaters one with goalies
+  tryCatch({
   if (pos == "goalies") {
     result <- data$goalies
     
@@ -136,7 +137,22 @@ teamStatsClean <- function(data, pos) {
     result <- result |>
       select(playerId, firstName, lastName, positionCode, gamesPlayed, goals, 
              assists, points, penaltyMinutes, shots, 
-             shootingPctg, avgTimeOnIcePerGame, avgShiftsPerGame, faceoffWinPctg)
+             shootingPctg, avgTimeOnIcePerGame, avgShiftsPerGame, faceoffWinPctg) |>
+      mutate(impactPlayer = ifelse(positionCode == "D", 
+                                   ifelse(avgTimeOnIcePerGame > 1200,
+                                          ifelse(gamesPlayed > 10,
+                                                 "Yes",
+                                                 "No"),
+                                          "No"),
+                                   ifelse(avgTimeOnIcePerGame > 900,
+                                          ifelse(gamesPlayed > 10,
+                                                 "Yes",
+                                                 "No"),
+                                          "No")
+                                   ),
+             ) |>
+      mutate(positionCode = as.factor(positionCode),
+             impactPlayer = as.factor(impactPlayer))
     
     result$firstName <- result$firstName$default
     result$lastName <- result$lastName$default
@@ -145,6 +161,9 @@ teamStatsClean <- function(data, pos) {
   } else {
     stop("Please specify the proper position. Valid arguments: skaters, goalies.")
   }
+  }, error = function(msg) {
+    warning("Please specify a team that qualifed for the playoffs in your chosen season!")
+  })
 }
 
 #Leader stats builder.
@@ -191,6 +210,9 @@ leaderStatsClean <- function(data) {
   result$firstName <- result$firstName$default
   result$lastName <- result$lastName$default
   result$teamName <- result$teamName$default
+  
+  result <- result |>
+    mutate(fullName = paste(substr(firstName, 1, 1), ". ", lastName, sep = ""))
   
   return(result)
 }
