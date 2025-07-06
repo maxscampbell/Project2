@@ -12,11 +12,20 @@ The following is a list of packages necessary for this app to run:
 * jsonlite
 * tidyverse
 * bslib
+* ggpie
 
 You can install these packages by running the following code in your RStudio console:
-`install.packages(c("shiny","ggplot2","httr","jsonlite","tidyverse","bslib"))`
+`install.packages(c("shiny","ggplot2","httr","jsonlite","tidyverse","bslib","ggpie))`
 
 ## Initializing the App
 
 Run the following code in your RStudio console to get started!
 `shiny::runGitHub(url = ' ')`
+
+## Special Thanks
+
+Yabing Song (2022). ggpie: Create Pie, Donut and Rose Pie Plot with
+'ggplot2'. R package version 0.2.5.
+https://CRAN.R-project.org/package=ggpie
+
+Zmalski and dword4 for their documentation on the NHL API
