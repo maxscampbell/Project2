@@ -91,11 +91,27 @@ ui <- fluidPage(
                 sidebarPanel(
                   conditionalPanel(condition = "input.endpoint == 'Team Statistics'",
                                    selectInput("chooseVis", "Choose an Output", choices = c("Scatterplot", "Numerical Summaries", "Pie Chart", "Bar Chart")),
-                                   conditionalPanel(condition = "input.chooseVis == 'Scatterplot'",
-                                                    selectInput("chooseX", "Choose your X-axis", choices = c()),
-                                                    selectInput("chooseY", "Choose your Y-axis", choices = c()),
-                                                    checkboxInput("facet", "Facet by Position", FALSE)
-                                                    ),
+                                   conditionalPanel(condition = "input.chooseVis == 'Scatterplot' && input.position == 'Skaters'",
+                                                    selectInput("chooseX_skaters", "Choose your X-axis", choices = c("gamesPlayed", "goals", 
+                                                                                                             "assists", "points", "penaltyMinutes", "shots", 
+                                                                                                             "shootingPctg", "avgTimeOnIcePerGame", "avgShiftsPerGame", 
+                                                                                                             "faceoffWinPctg")),
+                                                    selectInput("chooseY_skaters", "Choose your Y-axis", choices = c("gamesPlayed", "goals", 
+                                                                                                             "assists", "points", "penaltyMinutes", "shots", 
+                                                                                                             "shootingPctg", "avgTimeOnIcePerGame", "avgShiftsPerGame", 
+                                                                                                             "faceoffWinPctg")),
+                                                    checkboxInput("facet", "Enable Faceting", FALSE),
+                                                    conditionalPanel(condition = "input.facet",
+                                                                     selectInput("facetVar", "Choose a Faceting Variable", choices = c("positionCode", "impactPlayer")))
+                                   ),
+                                   conditionalPanel(condition = "input.chooseVis == 'Scatterplot' && input.position == 'Goalies'",
+                                                    selectInput("chooseX_goalies", "Choose your X-axis", choices = c("gamesPlayed", "gamesStarted", 
+                                                                                                                     "wins", "losses", "overtimeLosses", "goalsAgainstAverage", 
+                                                                                                                     "savePercentage", "shotsAgainst", "saves", "goalsAgainst", "shutout")),
+                                                    selectInput("chooseY_goalies", "Choose your Y-axis", choices = c("gamesPlayed", "gamesStarted", 
+                                                                                                                     "wins", "losses", "overtimeLosses", "goalsAgainstAverage", 
+                                                                                                                     "savePercentage", "shotsAgainst", "saves", "goalsAgainst", "shutout")),
+                                   ),
                                    div("NOTE: You must have selected regular season statistics to view the pie chart."),
                                    div("You must have selected skaters to view the contingency table."),
                                    div("---")
@@ -198,7 +214,19 @@ server <- function(input, output) {
     
     output$scatter <- renderPlot({
       if (input$position == "Skaters") {
-        ggplot(dataset(), aes(x = , y = )) +
+        plot <- ggplot(dataset(), aes(x = !!sym(input$chooseX_skaters), y = !!sym(input$chooseY_skaters), color = positionCode)) +
+          geom_point() +
+          ggtitle(paste(input$chooseX_skaters, "vs.", input$chooseY_skaters, "for", input$team, input$season))
+        
+        if(input$facet == TRUE) {
+          plot <- plot +
+            facet_grid(. ~ get(input$facetVar))
+        }
+        
+        plot
+        
+      } else if (input$position == "Goalies") {
+        ggplot(dataset(), aes(x = !!sym(input$chooseX_goalies), y = !!sym(input$chooseY_goalies))) +
           geom_point()
       }
     })
