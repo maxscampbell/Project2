@@ -44,25 +44,15 @@ getQuery <- function(url) {
   return(returned)
 }
 
-#Some ideas
-# 1) shot chart
-#    - user requests a game, shot statistics are displayed for one and/or both teams
-# 2) team statistics
-#    - display common statistics at a team scale (and maybe rank them)
-# 3) stats leaders
-#    - display the top 5 in goals, assists, hits, and sv%
-# 4) sv% charts
-#    - display a goalie's sv% over the course of the season to identify good/bad form
-
 #Endpoint/params
 # 2) Team Stats
 #    - Specify skaters and goalies
 #    - Specify regular season or playoffs
 # 3) Leaders
 #    - Specify goalie or skater
-#    - specify desired stat (goals, assists, points, hits for skater, 
-#        sv%, gaa, wins for goalie)
-#    - Specify limit (top 1-10)
+#    - specify desired stat (goals, assists, points for skater, 
+#        shutouts, wins for goalie)
+#    - Specify limit (top 1-25)
 #    - Specify season
 
 #Master function to build query URLs

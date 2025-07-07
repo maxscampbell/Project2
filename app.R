@@ -1,19 +1,15 @@
-#
-# This is a Shiny web application. You can run the application by clicking
-# the 'Run App' button above.
-#
-# Find out more about building applications with Shiny here:
-#
-#    https://shiny.posit.co/
-#
+# --- Load packages ---
 
 library(shiny)
 library(bslib)
 library(ggpie)
 
+# --- Load Helper Functions ---
+
 source("helpers.R")
 
-# Define UI for application that draws a histogram
+# Define UI
+
 ui <- fluidPage(
 
     # Application title
@@ -44,17 +40,27 @@ ui <- fluidPage(
       #Data Download tab: allow user to select applicable data and save it locally if they wish
       
       nav_panel("Data Download",
+                
                 sidebarPanel(
+                  #Choose an endpoint
                   selectInput("endpoint", "Choose Dataset", choices = c("Team Statistics", "Leader Statistics")),
+                  
+                  #Choose a season
                   textInput("season", "Enter a season", value = "20242025"),
                   div("Enter a season as the two years that the season took place in with no extra characters. For example, the 2024-2025 NHL Season is '20242025'."),
+                  
+                  #Choose skaters or goalies
                   selectInput("position", "Choose a position", choices = c("Skaters", "Goalies")),
+                  
+                  #Choose a team to view statistics for
                   conditionalPanel(
                     condition = "input.endpoint == 'Team Statistics'",
                     selectInput("team", "Choose a team", choices = team_abbr),
                     checkboxInput("playoffs", "View Playoff Statistics", FALSE),
                     div("NOTE: You will not see any data if you try to view playoffs statistics for a team that did not make the playoffs in that season.")
                   ),
+                  
+                  #Choose the relevant statistic and parameters surrounding the leader endpoint
                   conditionalPanel(
                     condition = "input.endpoint == 'Leader Statistics'",
                     sliderInput("limit", "Set entry count", min = 1, max = 25, value = 5),
@@ -67,30 +73,32 @@ ui <- fluidPage(
                       selectInput("stat_goalie", "Choose a Statistic", choices = c("Wins", "Shutouts"))
                     )
                   ),
+                  
+                  #Save data if desired
                   downloadButton("save", "Save Data")
                 ),
+                
+                #Display data
                 mainPanel(
                   card(tableOutput("data"))
+                  
                 )
                 ),
       
       #Data Exploration tab: allow user to see visualizations of the data they chose in the Data Download tab.
-      # Team stats
-      # 1) Scatterplot
-      #    - User will pick the two variables they wish to use
-      #    - User will be able to facet by player position
-      # 2) Contingency
-      #    - Impact Player vs. Position measured by goals assists and points
-      # 3) Pie Chart?
-      #    - Visualize goals scored as  % of team contributions
-      # Leader stats
-      # 4) bar graph
-      #    - display value of each player as a bar with value being the x axis
       
       nav_panel("Data Exploration",
+                
+                
                 sidebarPanel(
+                  
+                  #Allow parameters for different displays to be selected
                   conditionalPanel(condition = "input.endpoint == 'Team Statistics'",
+                                   
+                                   #Choose visualization to view
                                    selectInput("chooseVis", "Choose an Output", choices = c("Scatterplot", "Numerical Summaries", "Pie Chart", "Bar Chart")),
+                                   
+                                   #Choose statistics to view in scatterplot as well as faceting options
                                    conditionalPanel(condition = "input.chooseVis == 'Scatterplot' && input.position == 'Skaters'",
                                                     selectInput("chooseX_skaters", "Choose your X-axis", choices = c("gamesPlayed", "goals", 
                                                                                                              "assists", "points", "penaltyMinutes", "shots", 
@@ -106,6 +114,8 @@ ui <- fluidPage(
                                                     conditionalPanel(condition = "input.facet",
                                                                      selectInput("facetVar", "Choose a Faceting Variable", choices = c("positionCode", "impactPlayer")))
                                    ),
+                                   
+                                   #Choose inputs to view in scatterplot for goalies specifically
                                    conditionalPanel(condition = "input.chooseVis == 'Scatterplot' && input.position == 'Goalies'",
                                                     selectInput("chooseX_goalies", "Choose your X-axis", choices = c("gamesPlayed", "gamesStarted", 
                                                                                                                      "wins", "losses", "overtimeLosses", "goalsAgainstAverage", 
@@ -116,14 +126,18 @@ ui <- fluidPage(
                                                                                                                      "savePercentage", "shotsAgainst", "saves", "goalsAgainst", "shutout"),
                                                                 selected = "goalsAgainstAverage"),
                                    ),
+                                   
+                                   #Edge cases that don't display data noted here
+                                   
                                    div("NOTE: You must have selected regular season statistics to view the pie chart."),
                                    div("You must have selected skaters to view the contingency table."),
                                    div("---")
                                    ),
-                  conditionalPanel(condition = "input.endpoint == 'Leader Statistics'",
-                                   ),
+                  
                   div("You are currently viewing the data you selected in the Data Download tab! If you'd like to view new data, please re-select your choices in the Data Download tab.")
                 ),
+                
+                #Display each dataset individually based on user selection
                 mainPanel(
                   conditionalPanel(condition = "input.endpoint == 'Team Statistics' && input.chooseVis == 'Scatterplot'",
                                    plotOutput("scatter")
@@ -205,10 +219,12 @@ server <- function(input, output) {
       fetchInput(endpoint = end, arguments)
     })
 
+    # Display dataset in Data Download tab
     output$data <- renderTable({
       dataset()
     })
     
+    # Allow user to save data if desired
     output$save <- downloadHandler(
       filename = "NHL_Data.csv",
       content = function(file) {
@@ -216,8 +232,10 @@ server <- function(input, output) {
       }
     )
     
+    #Render contingency tables/summaries/plots
     output$scatter <- renderPlot({
       if (input$position == "Skaters") {
+        
         plot <- ggplot(dataset(), aes(x = !!sym(input$chooseX_skaters), y = !!sym(input$chooseY_skaters), color = positionCode)) +
           geom_point() +
           ggtitle(paste(input$chooseX_skaters, "vs.", input$chooseY_skaters, "for", input$team, input$season))
@@ -230,8 +248,10 @@ server <- function(input, output) {
         plot
         
       } else if (input$position == "Goalies") {
+        
         ggplot(dataset(), aes(x = !!sym(input$chooseX_goalies), y = !!sym(input$chooseY_goalies))) +
           geom_point()
+        
       }
     })
     
@@ -241,6 +261,7 @@ server <- function(input, output) {
     
     output$summary <- renderTable({
       if (input$position == "Skaters") {
+        
         dataset() |>
           group_by(positionCode, impactPlayer) |>
           summarize(meanGoals = mean(goals),
@@ -249,6 +270,7 @@ server <- function(input, output) {
                     stddevAssists = sd(assists),
                     meanPoints = mean(points),
                     stddevPoints = sd(points))
+        
       }
       
     })
@@ -265,12 +287,14 @@ server <- function(input, output) {
         ggtitle("Share of Goals Scored per Player")
       
     } else if (input$position == "Goalies") {
+      
       pie_data <- dataset() |>
         select(lastName, saves) |>
         rename(count = saves)
       
       ggpie(data = pie_data, group_key = "lastName", label_pos = "out") +
         ggtitle("Share of Saves Made per Player")
+      
     }
       
       
@@ -281,29 +305,39 @@ server <- function(input, output) {
       #Two different endpoints are possible sources for this plot, so two separate cases are needed.
       
       if (input$position == "Skaters") {
+        
         ggplot(data = dataset(), aes(x = fullName, y = value)) +
           geom_bar(stat = "identity", color = "black", fill = "blue") +
           ggtitle(paste("NHL Leaders in", input$stat_skater, "for the", input$season, "Season"), subtitle = "Skaters") +
           xlab("Name") + ylab("Count")
+        
       } else {
+        
         ggplot(data = dataset(), aes(x = lastName, y = value)) +
           geom_bar(stat = "identity", color = "black", fill = "orange") +
           ggtitle(paste("NHL Leaders in", input$stat_goalie, "for the", input$season, "Season"), subtitle = "Goalies") +
           xlab("Name") + ylab("Count")
+        
       }
       
     })
     
     output$bar_grouped <- renderPlot({
+      
       if (input$position == "Skaters") {
+        
         ggplot(data = dataset(), aes(x = positionCode, y = points, fill = impactPlayer)) +
           geom_bar(position = "dodge", stat = "identity") +
           ggtitle(paste("Points breakdown across lineup for", input$team, "in the", input$season, "Season"))
+        
       } else if (input$position == "Goalies") {
+        
         ggplot(data = dataset(), aes(x = lastName, y = goalsAgainstAverage)) +
           geom_bar(stat = "identity", fill = "orange") +
           ggtitle(paste("Goals Against Average (GAA) for", input$team, "Goalies in the", input$season, "Season"))
+        
       }
+      
     })
     
 }
