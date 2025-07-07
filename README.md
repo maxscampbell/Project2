@@ -15,12 +15,12 @@ The following is a list of packages necessary for this app to run:
 * ggpie
 
 You can install these packages by running the following code in your RStudio console:
-`install.packages(c("shiny","ggplot2","httr","jsonlite","tidyverse","bslib","ggpie))`
+`install.packages(c("shiny","ggplot2","httr","jsonlite","tidyverse","bslib","ggpie"))`
 
 ## Initializing the App
 
 Run the following code in your RStudio console to get started!
-`shiny::runGitHub(url = ' ')`
+`shiny::runGitHub("Project2", "maxscampbell")`
 
 ## Special Thanks
 
