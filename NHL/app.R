@@ -90,14 +90,14 @@ ui <- fluidPage(
       nav_panel("Data Exploration",
                 sidebarPanel(
                   conditionalPanel(condition = "input.endpoint == 'Team Statistics'",
-                                   selectInput("chooseVis", "Choose an Output", choices = c("Scatterplot", "Contingency Table", "Pie Chart")),
+                                   selectInput("chooseVis", "Choose an Output", choices = c("Scatterplot", "Numerical Summaries", "Pie Chart", "Bar Chart")),
                                    conditionalPanel(condition = "input.chooseVis == 'Scatterplot'",
                                                     selectInput("chooseX", "Choose your X-axis", choices = c()),
                                                     selectInput("chooseY", "Choose your Y-axis", choices = c()),
                                                     checkboxInput("facet", "Facet by Position", FALSE)
                                                     ),
-                                   div("NOTE: You must have selected regular season statistics for skaters to view the pie chart."),
-                                   div("You must have selected skaters to view the contingency table as well."),
+                                   div("NOTE: You must have selected regular season statistics to view the pie chart."),
+                                   div("You must have selected skaters to view the contingency table."),
                                    div("---")
                                    ),
                   conditionalPanel(condition = "input.endpoint == 'Leader Statistics'",
@@ -108,7 +108,7 @@ ui <- fluidPage(
                   conditionalPanel(condition = "input.endpoint == 'Team Statistics' && input.chooseVis == 'Scatterplot'",
                                    plotOutput("scatter")
                                    ),
-                  conditionalPanel(condition = "input.endpoint == 'Team Statistics' && input.chooseVis == 'Contingency Table' && input.position == 'Skaters'",
+                  conditionalPanel(condition = "input.endpoint == 'Team Statistics' && input.chooseVis == 'Numerical Summaries' && input.position == 'Skaters'",
                                    tableOutput("contingency"),
                                    div("The above table is a count of how many players per position qualify as impact players on the team you have currently selected."),
                                    div("I define an impact player as a player that has a higher average time on ice per game than what would be expected if a team used all of their players equally.
@@ -117,12 +117,15 @@ ui <- fluidPage(
                                    tableOutput("summary"),
                                    div("NOTE: Any NA's displayed are for factor groupings where only 1 observation was recorded")
                                    ),
-                  conditionalPanel(condition = "input.endpoint == 'Team Statistics' && input.chooseVis == 'Pie Chart' && input.position == 'Skaters' && !(input.playoffs)",
+                  conditionalPanel(condition = "input.endpoint == 'Team Statistics' && input.chooseVis == 'Pie Chart' && !(input.playoffs)",
                                    plotOutput("pie"),
                                    div("Teams that rely on their impact players disproportionately will have a few players taking up a significant amount of space on the chart.
                                        This is helpful for seeing how much teams rely on their best players to win games!"),
+                                   div("Teams with goalies who make the majority of their saves are those that typically have a dedicated starter and backup. These teams typically fare well in the playoffs!"),
                                    div("NOTES: only players who have played more than 10 games during the season are shown above.")
                   ),
+                  conditionalPanel(condition = "input.endpoint == 'Team Statistics' && input.chooseVis == 'Bar Chart'",
+                                   plotOutput("bar_grouped")),
                   conditionalPanel(condition = "input.endpoint == 'Leader Statistics'",
                                    plotOutput("bar")
                   )
@@ -220,12 +223,24 @@ server <- function(input, output) {
     
     output$pie <- renderPlot({
       
+    if (input$position == "Skaters") {
       pie_data <- dataset() |>
         filter(gamesPlayed > 10) |>
         select(lastName, points) |>
         rename(count = points)
       
-      ggpie(data = pie_data, group_key = "lastName", label_pos = "out")
+      ggpie(data = pie_data, group_key = "lastName", label_pos = "out") +
+        ggtitle("Share of Goals Scored per Player")
+      
+    } else if (input$position == "Goalies") {
+      pie_data <- dataset() |>
+        select(lastName, saves) |>
+        rename(count = saves)
+      
+      ggpie(data = pie_data, group_key = "lastName", label_pos = "out") +
+        ggtitle("Share of Saves Made per Player")
+    }
+      
       
     })
     
@@ -245,6 +260,18 @@ server <- function(input, output) {
           xlab("Name") + ylab("Count")
       }
       
+    })
+    
+    output$bar_grouped <- renderPlot({
+      if (input$position == "Skaters") {
+        ggplot(data = dataset(), aes(x = positionCode, y = points, fill = impactPlayer)) +
+          geom_bar(position = "dodge", stat = "identity") +
+          ggtitle(paste("Points breakdown across lineup for", input$team, "in the", input$season, "Season"))
+      } else if (input$position == "Goalies") {
+        ggplot(data = dataset(), aes(x = lastName, y = goalsAgainstAverage)) +
+          geom_bar(stat = "identity", fill = "orange") +
+          ggtitle(paste("Goals Against Average (GAA) for", input$team, "Goalies in the", input$season, "Season"))
+      }
     })
     
 }
