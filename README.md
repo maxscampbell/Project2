@@ -19,7 +19,7 @@ You can install these packages by running the following code in your RStudio con
 
 ## Initializing the App
 
-Run the following code in your RStudio console to get started!
+First, load the shiny package as follows: `library(shiny)`. Then, run the following function in your console on RStudio to get started!
 `shiny::runGitHub("Project2", "maxscampbell")`
 
 ## Special Thanks
